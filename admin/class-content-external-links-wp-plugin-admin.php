@@ -13,9 +13,6 @@
 /**
  * The admin-specific functionality of the plugin.
  *
- * Defines the plugin name, version, and two examples hooks for how to
- * enqueue the admin-specific stylesheet and JavaScript.
- *
  * @package    Content_External_Links_Wp_Plugin
  * @subpackage Content_External_Links_Wp_Plugin/admin
  * @author     Pasquill <pasquill.x@gmail.com>
@@ -97,6 +94,53 @@ class Content_External_Links_Wp_Plugin_Admin {
 		 */
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/content-external-links-wp-plugin-admin.js', array( 'jquery' ), $this->version, false );
+
+	}
+
+	/**
+	 * Register plugin menu for the admin area.
+	 *
+	 * @since    1.0.0
+	 */
+	public function add_plugin_admin_menu() {
+
+		add_options_page( 'Content External Links', 'Content External Links', 'manage_options', $this->plugin_name, array($this, 'display_plugin_setup_page') );
+
+	}
+
+	/**
+     * Add settings action link to the plugins page.
+	 *
+	 * @since    1.0.0
+	 */
+    public function add_action_links( $links ) {
+
+		$settings_link = array(
+		 '<a href="' . admin_url( 'options-general.php?page=' . $this->plugin_name ) . '">' . __('Settings', $this->plugin_name) . '</a>',
+		);
+		return array_merge(  $settings_link, $links );
+
+	 }
+
+	/**
+	 * Render the settings page for the plugin.
+	 *
+	 * @since    1.0.0
+	 */
+	public function display_plugin_setup_page() {
+
+		include_once( 'partials/' . $this->plugin_name . '-admin-display.php' );
+
+	}
+
+	/**
+	 * Register options in the allowed options list.
+	 *
+	 * @since    1.0.0
+	 */
+	public function register_plugin_options() {
+
+		register_setting( $this->plugin_name, $this->plugin_name );
 
 	}
 

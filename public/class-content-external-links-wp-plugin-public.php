@@ -13,9 +13,6 @@
 /**
  * The public-facing functionality of the plugin.
  *
- * Defines the plugin name, version, and two examples hooks for how to
- * enqueue the public-facing stylesheet and JavaScript.
- *
  * @package    Content_External_Links_Wp_Plugin
  * @subpackage Content_External_Links_Wp_Plugin/public
  * @author     Pasquill <pasquill.x@gmail.com>
@@ -51,6 +48,10 @@ class Content_External_Links_Wp_Plugin_Public {
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
+
+		$this->plugin_options = get_option($this->plugin_name);
+
+		$this->site_url = site_url();
 
 	}
 
@@ -97,6 +98,67 @@ class Content_External_Links_Wp_Plugin_Public {
 		 */
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/content-external-links-wp-plugin-public.js', array( 'jquery' ), $this->version, false );
+
+	}
+
+	/**
+	 * Filter the_content depending on options checked by user.
+	 *
+	 * @since    1.0.0
+	 */
+	public function filter_content( $content ) {
+
+		// Ignore if all options disabled
+		if( !isset( $this->plugin_options['nofollow'] ) && !isset( $this->plugin_options['blank'] ) ) {
+			return $content;
+		}
+
+		// Get all matches
+		preg_match_all( '/<a [^>]*>/m', $content, $matches, PREG_SET_ORDER, 0 );
+
+		foreach ($matches as $match) {
+			// Ignore if link is internal
+			if( !!preg_match( '/' . preg_quote( $this->site_url, '/' ) . '/m', $match[0] ) || !preg_match( '/href="http(|s):\/\//m', $match[0] ) ) {
+				continue;
+			}
+
+			$subject = $match[0];
+
+			// NOFOLLOW
+			if( isset( $this->plugin_options['nofollow'] ) ) {
+				// Ignore if link contains nofollow attribute
+				if( preg_match( '/rel="[^"]*nofollow[^"]*"/m', $subject ) ) {
+					continue;
+				}
+
+				// Set replace
+				if( preg_match( '/rel="[^"]*"/m', $subject ) ) {
+					$replace = str_replace( ' rel="', ' rel="nofollow ', $subject );
+				} else {
+					$replace = str_replace( '<a', '<a rel="nofollow"', $subject );
+				}
+
+				// Replace
+				$content = str_replace( $subject, $replace, $content );
+				$subject = $replace;
+			}
+
+			// _BLANK
+			if( isset( $this->plugin_options['blank'] ) ) {
+				// Ignore if link contains _blank attribute
+				if( preg_match( '/target="_blank"/m', $subject ) ) {
+					continue;
+				}
+
+				// Set replace
+				$replace = str_replace( '<a', '<a target="_blank"', $subject );
+
+				// Replace
+				$content = str_replace( $subject, $replace, $content );
+			}
+		}
+
+		return $content;
 
 	}
 
